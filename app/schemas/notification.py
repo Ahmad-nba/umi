@@ -11,4 +11,5 @@ class NotificationRead(BaseModel):
     event_type: str
     message: str
     status: str
+    delivery_error: str | None = None
     created_at: str

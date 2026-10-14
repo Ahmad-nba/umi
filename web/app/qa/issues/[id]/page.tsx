@@ -92,7 +92,7 @@ export default function QAIssuePage() {
               {notifications.map((item) => (
                 <div key={item.id}>
                   <p className="ui-sans text-xs font-bold uppercase tracking-wider text-muted">
-                    {item.event_type}
+                    {item.event_type} · {item.channel} · {item.status}
                   </p>
                   <p className="mt-1 text-sm leading-6">{item.message}</p>
                 </div>

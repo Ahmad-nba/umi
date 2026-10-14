@@ -52,6 +52,7 @@ export type Notification = {
   event_type: string;
   message: string;
   status: string;
+  delivery_error: string | null;
   created_at: string;
 };
 export type QAIssueSummary = {

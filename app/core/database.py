@@ -70,3 +70,13 @@ def init_db() -> None:
                 connection.execute(
                     text("ALTER TABLE conversations ADD COLUMN feedback_id INTEGER")
                 )
+        notification_columns = {
+            column["name"] for column in inspect(engine).get_columns("notifications")
+        }
+        if "delivery_error" not in notification_columns:
+            with engine.begin() as connection:
+                connection.execute(
+                    text(
+                        "ALTER TABLE notifications ADD COLUMN delivery_error VARCHAR(255)"
+                    )
+                )

@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -37,8 +38,6 @@ export default function ReporterStatusPage() {
       setError(err instanceof Error ? err.message : "Unable to load feedback.");
     }
   }
-  // The effect synchronizes the route parameter with server state.
-  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
   useEffect(() => {
     load();
   }, [id]);
@@ -154,7 +153,7 @@ export default function ReporterStatusPage() {
                 notifications.map((item) => (
                   <div key={item.id} className="border-l-2 border-sun pl-4">
                     <p className="ui-sans text-xs font-bold uppercase tracking-wider text-muted">
-                      {item.event_type.replaceAll("_", " ")}
+                      {item.event_type.replaceAll("_", " ")} · {item.status}
                     </p>
                     <p className="mt-1 text-sm leading-6">{item.message}</p>
                   </div>

@@ -19,6 +19,18 @@ class Settings(BaseSettings):
     openrouter_api_key: str | None = Field(default=None, alias="OPENROUTER_API_KEY")
     openrouter_model: str = Field(default="openrouter/auto", alias="OPENROUTER_MODEL")
     database_url: str = "sqlite:///./data/feedback_watch_tower.db"
+    sender_api_key: str | None = Field(default=None, alias="SENDER_API_KEY")
+    sender_from_email: str | None = Field(default=None, alias="SENDER_FROM_EMAIL")
+    sender_from_name: str = Field(
+        default="UMI Feedback Watch Tower", alias="SENDER_FROM_NAME"
+    )
+    sender_enabled: bool = Field(default=False, alias="SENDER_ENABLED")
+    sender_api_url: str = Field(
+        default="https://api.sender.net/v1/email", alias="SENDER_API_URL"
+    )
+    frontend_base_url: str = Field(
+        default="http://localhost:3000", alias="FRONTEND_BASE_URL"
+    )
 
 
 @lru_cache

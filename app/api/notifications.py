@@ -5,12 +5,13 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.issue import Issue
+from app.schemas.notification import NotificationRead
 from app.services.notification_service import NotificationService
 
 router = APIRouter(prefix="/issues", tags=["notifications"])
 
 
-@router.get("/{issue_id}/notifications")
+@router.get("/{issue_id}/notifications", response_model=list[NotificationRead])
 def list_notifications(issue_id: int, db: Session = Depends(get_db)) -> list[dict]:
     issue = db.query(Issue).filter(Issue.id == issue_id).first()
     if issue is None:
@@ -27,6 +28,7 @@ def list_notifications(issue_id: int, db: Session = Depends(get_db)) -> list[dic
             "event_type": item.event_type,
             "message": item.message,
             "status": item.status,
+            "delivery_error": item.delivery_error,
             "created_at": item.created_at.isoformat(),
         }
         for item in items

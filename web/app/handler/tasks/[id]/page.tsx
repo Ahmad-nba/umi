@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -24,8 +25,6 @@ export default function HandlerTaskPage() {
       setError(err instanceof Error ? err.message : "Unable to load issue.");
     }
   }
-  // The effect synchronizes the route parameter with server state.
-  // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
   useEffect(() => {
     load();
   }, [id]);
