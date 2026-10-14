@@ -38,7 +38,9 @@ class Settings(BaseSettings):
 
     @property
     def cors_origin_list(self) -> list[str]:
-        origins = [origin.strip().rstrip("/") for origin in self.cors_origins.split(",")]
+        configured_origins = [origin.strip() for origin in self.cors_origins.split(",")]
+        configured_origins.append(self.frontend_base_url)
+        origins = [origin.rstrip("/") for origin in configured_origins]
         origins = [origin for origin in origins if origin]
         if "*" in origins and self.app_env.lower() == "production":
             raise ValueError("CORS_ORIGINS cannot contain '*' in production")
