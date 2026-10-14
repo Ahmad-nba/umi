@@ -24,7 +24,14 @@ def _database_path() -> str:
 
 def build_engine(database_url: str | None = None):
     url = database_url or _database_path()
-    return create_engine(url, connect_args={"check_same_thread": False})
+    if url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+psycopg://", 1)
+    connect_args = {"check_same_thread": False} if url.startswith("sqlite") else {}
+    return create_engine(
+        url,
+        connect_args=connect_args,
+        pool_pre_ping=not url.startswith("sqlite"),
+    )
 
 
 engine = build_engine()

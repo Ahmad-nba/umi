@@ -31,6 +31,18 @@ class Settings(BaseSettings):
     frontend_base_url: str = Field(
         default="http://localhost:3000", alias="FRONTEND_BASE_URL"
     )
+    cors_origins: str = Field(
+        default="http://localhost:3000,http://127.0.0.1:3000",
+        alias="CORS_ORIGINS",
+    )
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        origins = [origin.strip().rstrip("/") for origin in self.cors_origins.split(",")]
+        origins = [origin for origin in origins if origin]
+        if "*" in origins and self.app_env.lower() == "production":
+            raise ValueError("CORS_ORIGINS cannot contain '*' in production")
+        return origins
 
 
 @lru_cache

@@ -59,3 +59,13 @@ def seed_demo_data(db: Session) -> None:
         )
 
     db.commit()
+
+
+if __name__ == "__main__":
+    from app.core.database import SessionLocal
+
+    session = SessionLocal()
+    try:
+        seed_handlers(session)
+    finally:
+        session.close()

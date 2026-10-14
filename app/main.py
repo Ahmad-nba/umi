@@ -10,6 +10,7 @@ from app.api.qa import router as qa_router
 from app.api.conversations import router as conversations_router
 from app.api.workflow import router as workflow_router
 import app.core.database as database
+from app.core.config import get_settings
 from app.seed import seed_handlers
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -24,10 +25,7 @@ app.include_router(conversations_router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ],
+    allow_origins=get_settings().cors_origin_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -36,6 +34,8 @@ app.add_middleware(
 
 @app.on_event("startup")
 def startup_event() -> None:
+    if get_settings().app_env.lower() == "production":
+        return
     database.init_db()
     db = database.SessionLocal()
     try:

@@ -3,7 +3,7 @@
 **Date:** 2026-10-14  
 **Repository:** `Ahmad-nba/umi`  
 **Target deployment:** Render (FastAPI backend), Neon PostgreSQL, Vercel (Next.js frontend)  
-**Status:** Production preparation assessment complete; PostgreSQL migration and cloud deployment are not yet complete.
+**Status:** PostgreSQL compatibility implementation complete; PostgreSQL server validation and cloud deployment are not yet complete.
 
 ## 1. Executive summary
 
@@ -20,7 +20,7 @@ The current implementation is suitable for a tested demonstrator, not for an int
 7. External LLM and email integrations have not been verified against production credentials/services.
 8. Deployment commands, environment variables, and rollback procedures are not yet encoded as a tested deployment workflow.
 
-The safest next implementation is to retain SQLAlchemy and the existing service/API contract, add PostgreSQL support through `DATABASE_URL`, add the PostgreSQL driver, introduce versioned migrations, and preserve SQLite only as an explicit local/test option. A broad rewrite or frontend redesign is not warranted.
+The selected implementation retains SQLAlchemy and the existing service/API contract, adds PostgreSQL support through `DATABASE_URL`, adds the PostgreSQL driver, introduces versioned migrations, and preserves SQLite for local development/tests. A broad rewrite or frontend redesign was not warranted.
 
 ## 2. Evidence reviewed
 
@@ -166,23 +166,17 @@ This is preferable because it:
 4. Keep startup seeding idempotent, or move it to an explicit release/setup command so multiple workers cannot race to initialize production data.
 5. Run migrations once as a Render release/pre-deploy command, not from every worker.
 
-### Phase 3 — Data preservation
+### Phase 3 — Data preservation decision
 
-Do not migrate the existing SQLite file automatically. First establish whether it contains records that matter.
+The existing SQLite records are demo data. They do not need to be transferred to Neon. The migration will preserve the **schema and database setup**, not the demo rows:
 
-If records must be retained:
+1. Leave `data/feedback_watch_tower.db` intact.
+2. Create a clean PostgreSQL database from the initial Alembic migration.
+3. Seed only the standard handler records through the idempotent setup process.
+4. Do not copy demo reporters, feedback, issues, events, notifications, or conversations.
+5. Keep the SQLite file as a local reference/rollback artifact.
 
-1. Make a byte-for-byte backup of `data/feedback_watch_tower.db`.
-2. Create the Neon schema from the initial migration.
-3. Export/import parent tables before child tables: reporters and handlers, then feedbacks, issues, events, notifications, and conversations.
-4. Preserve IDs where API references or audit history require them.
-5. Preserve timestamps, nulls, booleans, JSON values, and unique references.
-6. Reset PostgreSQL sequences after explicit ID insertion.
-7. Compare row counts and foreign-key relationships.
-8. Run workflow and invariant checks against the imported data.
-9. Keep the SQLite backup immutable until the new database is accepted.
-
-If the file contains only disposable development data, initialize a clean development/production database and document that no data migration was performed.
+If this data policy changes later, create a separately reviewed export/import procedure before moving any records.
 
 ### Phase 4 — Production safety
 
@@ -198,17 +192,16 @@ Before public deployment:
 
 ## 8. Expected files to change in the implementation phase
 
-This report did not edit application code. The likely implementation set is:
+The implementation changed:
 
 - `requirements.txt`
 - `app/core/config.py`
 - `app/core/database.py`
 - `app/main.py`
-- New Alembic configuration and migration files.
-- `tests/conftest.py` and new PostgreSQL integration tests.
-- `.env.example`
-- `README.md` or a dedicated database setup document.
-- Deployment configuration/documentation for Render.
+- `alembic.ini` and new Alembic configuration/migration files.
+- `.env.example`.
+- `docs/production/database-setup.md`.
+- `production_prep.md`.
 
 The notification files currently changed in the working tree should be reviewed separately and merged carefully with database changes.
 
@@ -217,14 +210,17 @@ The notification files currently changed in the working tree should be reviewed 
 ### Already verified
 
 - Full existing suite: **41 passed**.
+- Clean temporary SQLite database migrated successfully to Alembic revision `20261014_0001`.
+- SQLite engine behavior remains compatible, including the existing test fixtures.
+- PostgreSQL-specific engine configuration is syntactically wired through `DATABASE_URL`.
 - Core feedback, workflow, routing, notifications, conversations, QA, CLI, and email-notification tests are present.
 - FastAPI startup path is exercised by the existing `TestClient` fixtures against SQLite.
 
 ### Not yet verified
 
 - PostgreSQL driver installation and connection.
-- Neon schema creation.
-- Alembic upgrade and downgrade behavior.
+- Neon schema creation and connectivity.
+- Alembic upgrade behavior on PostgreSQL.
 - PostgreSQL-backed API workflows.
 - PostgreSQL JSON, timestamp, uniqueness, and foreign-key behavior.
 - Render build/start/release commands.
@@ -321,7 +317,7 @@ This must become environment-configurable before the Vercel frontend can call a 
 ### P1 — Required for a reliable demo
 
 - Run the full regression suite against PostgreSQL.
-- Decide whether the existing SQLite data is migrated or discarded as disposable.
+- Initialize Neon with a clean schema; no migration of the current demo rows is required.
 - Test OpenRouter and email integrations with non-production credentials.
 - Add structured, redacted production logging.
 - Add migration and deployment documentation.
@@ -336,11 +332,28 @@ This must become environment-configurable before the Vercel frontend can call a 
 - Define data retention, privacy, and audit-log policies.
 - Replace deprecated FastAPI startup events with lifespan handling.
 
-## 13. Final status
+## 13. Implementation status and final status
 
-**The project is not yet ready for the next deployment phase as a production service.** It is ready for the next implementation phase: PostgreSQL compatibility, migrations, environment-driven CORS, readiness checks, and deployment validation.
+### Completed in this change
+
+- Added `psycopg[binary]` and Alembic dependencies.
+- Added dialect-aware SQLAlchemy engine options so SQLite receives `check_same_thread` while PostgreSQL does not.
+- Added configurable, normalized CORS origins through `CORS_ORIGINS`.
+- Added an initial Alembic migration for all seven ORM tables, constraints, indexes, and JSON columns.
+- Kept local SQLite startup initialization for development/tests.
+- Disabled automatic schema creation and handler seeding during production application startup.
+- Added `python -m app.seed` for explicit, idempotent handler setup after production migrations.
+- Added [database-setup.md](docs/production/database-setup.md) with clean-database setup and validation commands.
+- Preserved the existing SQLite demo database; no demo rows were copied.
+
+### Not yet verified
+
+- No PostgreSQL server or isolated Neon branch was available in this environment, so PostgreSQL migration/application tests were not run.
+- Render release/start commands and Vercel-to-Render CORS were not tested.
+- Authentication/authorization remains a separate production blocker.
+
+**The project is not yet ready for public production deployment.** It is ready for the next validation phase: apply the migration to an isolated PostgreSQL database, run the application workflow tests against it, seed handlers explicitly, and then validate Render/Neon connectivity.
 
 The current evidence supports the following narrower conclusion:
 
-> The existing SQLite-backed application is a functioning tested demonstrator with 41 passing tests. PostgreSQL migration, Neon connectivity, Render deployment, Vercel integration, authentication, and production readiness remain unverified or incomplete.
-
+> The existing SQLite-backed application remains a functioning tested demonstrator with 41 passing tests. PostgreSQL support and schema migration are implemented and validated against a clean temporary SQLite migration database, but PostgreSQL connectivity, Neon, Render, Vercel integration, authentication, and full production readiness remain unverified or incomplete.
